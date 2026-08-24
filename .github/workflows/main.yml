@@ -7,15 +7,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 5ecbe1ac17ec0484c5b44af0bd580cdc9c428ed4
           submodules: recursive
       - name: Configure
         run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF
       - name: Build
-        run: cmake --build build --config Release --target llama-server llama-cli --parallel
+        run: cmake --build build --config Release --target llama-server llama-cli llama-quantize --parallel
       - uses: actions/upload-artifact@v4
         with:
           name: llama-dflash2-win-cpu
           path: |
             build/bin/Release/*.exe
             build/bin/Release/*.dll
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install python deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements-convert_hf_to_gguf.txt
+          pip install huggingface_hub
+      - name: Download draft and target metadata
+        shell: bash
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import snapshot_download
+          snapshot_download('incoai/Qwen3.8-27B-DFlash2', local_dir='draft')
+          snapshot_download('Qwen/Qwen3.8-27B', local_dir='target',
+                            allow_patterns=['config.json','tokenizer.json','tokenizer_config.json','vocab.json','merges.txt','tokenizer.model'])
+          EOF
+      - name: Convert draft to GGUF
+        run: python convert_hf_to_gguf.py draft --target-model-dir target --outfile draft-f16.gguf --outtype f16
+      - name: Quantize draft to Q4_K_M
+        shell: pwsh
+        run: |
+          & "build/bin/Release/llama-quantize.exe" draft-f16.gguf Qwen3.8-27B-DFlash2-Q4_K_M-new.gguf q4_k_m
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dflash2-draft-gguf
+          path: |
+            Qwen3.8-27B-DFlash2-Q4_K_M-new.gguf
+            draft-f16.gguf
+          if-no-files-found: error
