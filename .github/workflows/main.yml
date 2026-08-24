@@ -9,7 +9,7 @@ jobs:
         with:
           submodules: recursive
       - name: Configure
-        run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DLLAMA_CURL=OFF
+        run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DLLAMA_OPENSSL=OFF
       - name: Build
         run: cmake --build build --config Release --target llama-server llama-cli --parallel
       - uses: actions/upload-artifact@v4
