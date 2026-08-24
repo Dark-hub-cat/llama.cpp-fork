@@ -7,9 +7,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: 5ecbe1ac17ec0484c5b44af0bd580cdc9c428ed4
           submodules: recursive
       - name: Configure
-        run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DLLAMA_OPENSSL=OFF
+        run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON -DLLAMA_OPENSSL=OFF -DLLAMA_CURL=OFF
       - name: Build
         run: cmake --build build --config Release --target llama-server llama-cli --parallel
       - uses: actions/upload-artifact@v4
