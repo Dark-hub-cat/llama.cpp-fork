@@ -1,0 +1,20 @@
+name: build-win-cpu
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Configure
+        run: cmake -B build -DGGML_NATIVE=OFF -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON
+      - name: Build
+        run: cmake --build build --config Release --target llama-server llama-cli --parallel
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llama-dflash2-win-cpu
+          path: |
+            build/bin/Release/*.exe
+            build/bin/Release/*.dll
